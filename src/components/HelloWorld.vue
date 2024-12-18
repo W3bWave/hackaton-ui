@@ -1,60 +1,100 @@
 <template>
   <div class="hello">
-    <h1>{{ msg }}</h1>
-    <p>
-      For a guide and recipes on how to configure / customize this project,<br>
-      check out the
-      <a href="https://cli.vuejs.org" target="_blank" rel="noopener">vue-cli documentation</a>.
-    </p>
-    <h3>Installed CLI Plugins</h3>
-    <ul>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-babel" target="_blank" rel="noopener">babel</a></li>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-router" target="_blank" rel="noopener">router</a></li>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-vuex" target="_blank" rel="noopener">vuex</a></li>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-eslint" target="_blank" rel="noopener">eslint</a></li>
-    </ul>
-    <h3>Essential Links</h3>
-    <ul>
-      <li><a href="https://vuejs.org" target="_blank" rel="noopener">Core Docs</a></li>
-      <li><a href="https://forum.vuejs.org" target="_blank" rel="noopener">Forum</a></li>
-      <li><a href="https://chat.vuejs.org" target="_blank" rel="noopener">Community Chat</a></li>
-      <li><a href="https://twitter.com/vuejs" target="_blank" rel="noopener">Twitter</a></li>
-      <li><a href="https://news.vuejs.org" target="_blank" rel="noopener">News</a></li>
-    </ul>
-    <h3>Ecosystem</h3>
-    <ul>
-      <li><a href="https://router.vuejs.org" target="_blank" rel="noopener">vue-router</a></li>
-      <li><a href="https://vuex.vuejs.org" target="_blank" rel="noopener">vuex</a></li>
-      <li><a href="https://github.com/vuejs/vue-devtools#vue-devtools" target="_blank" rel="noopener">vue-devtools</a></li>
-      <li><a href="https://vue-loader.vuejs.org" target="_blank" rel="noopener">vue-loader</a></li>
-      <li><a href="https://github.com/vuejs/awesome-vue" target="_blank" rel="noopener">awesome-vue</a></li>
-    </ul>
+    <p>Inited? : {{ inited }}</p>
+    <p>granted? : {{ granted }}</p>
+    <p>available? : {{ available }}</p>
+    <button @click="open()">ACCESS GEO</button>
+    <button>GET GEO</button>
+    <p>{{ data }}</p>
+
+    <div id="YMapsID" style="width: 450px; height: 350px;"></div>
+
   </div>
 </template>
 
 <script>
+
 export default {
+
   name: 'HelloWorld',
-  props: {
-    msg: String
+  data(){
+    return {
+      inited : false,
+      granted: false,
+      available : false,
+      map : null,
+      data : "",
+    
+    }
+  },
+  methods : {
+    open(){
+      this.Telegram.WebApp.MainButton.show();
+    }
+  },
+  mounted(){
+    this.inited = this.Telegram.WebApp.LocationManager.isInited;
+    this.Telegram.WebApp.LocationManager.init(()=>{
+      console.log("inited");
+      this.inited = this.Telegram.WebApp.LocationManager.isInited;
+      this.granted = this.Telegram.WebApp.LocationManager.isAccessGranted;
+      this.available = this.Telegram.WebApp.LocationManager.isLocationAvailable;
+      
+      if(this.Telegram.WebApp.LocationManager.isLocationAvailable){
+        if(!this.Telegram.WebApp.LocationManager.isAccessGranted){
+          this.Telegram.WebApp.LocationManager.openSettings();
+        }
+        else{
+          this.Telegram.WebApp.LocationManager.getLocation((data)=>{
+            this.data = JSON.stringify(data)
+            this.ymaps.ready(()=>{
+              let map = new this.ymaps.Map("YMapsID",{
+                center : [data.latitude,data.longitude],
+                zoom: 15
+              })
+              map.behaviors.disable('controls');
+              var myPlacemark = new this.ymaps.Placemark([data.latitude,data.longitude],{},{
+                preset : "islands#redCircleDotIcon"
+              });
+              map.geoObjects.add(myPlacemark);
+              })
+          })
+        }
+        
+      }
+     
+    })
+
+    this.Telegram.WebApp.MainButton.onClick(()=>{
+      this.Telegram.WebApp.LocationManager.getLocation((data)=>{
+            
+            this.data = JSON.stringify(data)
+          })
+      })
+      
+    
+   
+
   }
 }
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-h3 {
-  margin: 40px 0 0;
-}
-ul {
-  list-style-type: none;
-  padding: 0;
-}
-li {
-  display: inline-block;
-  margin: 0 10px;
-}
-a {
-  color: #42b983;
-}
+  button{
+    background-color: #3ac3ea;
+    color: #000;
+    border-radius: 5px;
+    border: none;
+    padding: 10px;
+    font-family: Arial;
+  }
+  .hello{
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  p{
+    color: #fff;
+  }
 </style>
